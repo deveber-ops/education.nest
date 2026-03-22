@@ -1,0 +1,89 @@
+generator client {
+  provider     = "prisma-client-js"
+  moduleFormat = "cjs"
+  engineType   = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Users {
+  id           String     @id @default(uuid())
+  createdAt    DateTime   @default(now())
+  email        String     @unique
+  login        String     @unique @db.VarChar(10)
+  password     String     @db.VarChar(500)
+  recoveryCode String?    @db.VarChar(36)
+  comments     Comments[]
+  Devices      Devices[]
+  Likes        Likes[]
+}
+
+model Blogs {
+  id           String   @id @default(uuid())
+  name         String   @db.VarChar(15)
+  description  String   @db.VarChar(500)
+  websiteUrl   String   @db.VarChar(100)
+  createdAt    DateTime @default(now())
+  isMembership Boolean  @default(true)
+}
+
+model Posts {
+  id               String     @id @default(uuid())
+  title            String     @db.VarChar(30)
+  shortDescription String     @db.VarChar(100)
+  content          String     @db.VarChar(1000)
+  blogId           String     @db.VarChar(36)
+  blogName         String     @db.VarChar(15)
+  createdAt        DateTime   @default(now())
+  Comments         Comments[]
+}
+
+model Comments {
+  id        String   @id @default(uuid())
+  content   String   @db.VarChar(300)
+  createdAt DateTime @default(now())
+  postId    String   @db.VarChar(36)
+  userId    String   @db.VarChar(36)
+  user      Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Posts    @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model Likes {
+  id         String   @id @default(uuid())
+  createdAt  DateTime @default(now())
+  userId     String   @db.VarChar(36)
+  entityId   String   @db.VarChar(36) // ID поста или комментария
+  entityType String   @db.VarChar(20) // "post" или "comment"
+  status     String   @default("None")
+
+  user Users @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entityId, entityType])
+}
+
+model Devices {
+  deviceId       String   @id @db.VarChar(64)
+  ip             String
+  title          String
+  jti            String
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime @db.Timestamp(3)
+  lastActiveDate DateTime @db.Timestamp(3)
+  userId         String   @db.VarChar(36)
+  user           Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+}
+
+model Registrations {
+  id               String   @id @default(uuid())
+  createdAt        DateTime @default(now())
+  email            String   @unique
+  login            String   @unique @db.VarChar(10)
+  password         String   @db.VarChar(500)
+  verificationCode String   @default(uuid()) @db.VarChar(36)
+  codeExpires      DateTime
+  confirmed        Boolean  @default(false)
+}
